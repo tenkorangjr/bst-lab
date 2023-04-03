@@ -128,28 +128,107 @@ public class BSTMap<K, V> implements MapSet<K, V> {
         }
     }
 
-    private Node<K, V> getNode(K key, Node<K, V> cur) {
-        if (comparator.compare(key, cur.getKey()) < 0) {
-            if (cur.left != null) {
-                return getNode(key, cur.left);
+    @Override
+    public V remove(K key) {
+        Node<K, V> toDeleteParent = null;
+        Node<K, V> toDelete = root;
+
+        if (!containsKey(key)) {
+            return null;
+        }
+
+        while (toDelete != null) {
+            if (comparator.compare(key, toDelete.getKey()) < 0) {
+                toDeleteParent = toDelete;
+                toDelete = toDelete.left;
+            } else if (comparator.compare(key, toDelete.getKey()) > 0) {
+                toDeleteParent = toDelete;
+                toDelete = toDelete.right;
             } else {
-                return null;
+                break;
             }
-        } else if (comparator.compare(key, cur.getKey()) > 0) {
-            if (cur.right != null) {
-                return getNode(key, cur.right);
+        }
+
+        if (toDelete == null) {
+            return null;
+        }
+
+        V value = toDelete.getValue();
+        handleReplacement(toDelete, toDeleteParent);
+        size--;
+
+        return value;
+    }
+
+    private void handleReplacement(Node<K, V> toDelete, Node<K, V> toDeleteParent) {
+        if (toDelete.left == null && toDelete.right == null) {
+            if (toDeleteParent == null) {
+                root = null;
+            } else if (toDeleteParent.left == toDelete) {
+                toDeleteParent.left = null;
             } else {
-                return null;
+                toDeleteParent.right = null;
+            }
+        } else if (toDelete.left == null) {
+            if (toDeleteParent == null) {
+                root = toDelete.right;
+            } else if (toDeleteParent.left == toDelete) {
+                toDeleteParent.left = toDelete.right;
+            } else {
+                toDeleteParent.right = toDelete.right;
+            }
+        } else if (toDelete.right == null) {
+            if (toDeleteParent == null) {
+                root = toDelete.left;
+            } else if (toDeleteParent.left == toDelete) {
+                toDeleteParent.left = toDelete.left;
+            } else {
+                toDeleteParent.right = toDelete.left;
             }
         } else {
-            return cur;
+            Node<K, V> successorParent = toDelete;
+            Node<K, V> successor = toDelete.right;
+
+            while (successor.left != null) {
+                successorParent = successor;
+                successor = successor.left;
+            }
+
+            if (successorParent != toDelete) {
+                successorParent.left = successor.right;
+                successor.right = toDelete.right;
+            }
+
+            if (toDeleteParent == null) {
+                root = successor;
+            } else if (toDeleteParent.left == toDelete) {
+                toDeleteParent.left = successor;
+            } else {
+                toDeleteParent.right = successor;
+            }
+
+            successor.left = toDelete.left;
         }
     }
 
-    @Override
-    public V remove(K key) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'remove'");
+    public String toString() {
+        return toString(root, "root: ", "");
+    }
+
+    private String toString(Node<K, V> node, String mainString, String childrenString) {
+        if (node == null) {
+            return "";
+        }
+        String result = childrenString + mainString + "<" + node.getKey() + " -> " + node.getValue() + ">\n";
+        if (node.left != null) {
+            result += toString(node.left, "left: ", childrenString + "    ");
+        }
+
+        if (node.right != null) {
+            result += toString(node.right, "right: ", childrenString + "    ");
+        }
+
+        return result;
     }
 
     @Override
@@ -231,46 +310,31 @@ public class BSTMap<K, V> implements MapSet<K, V> {
 
     @Override
     public int maxDepth() {
-        if (size == 0) {
+        return maxDepth(root);
+    }
+
+    private int maxDepth(Node<K, V> node) {
+        if (node == null) {
             return 0;
         }
 
-        int curDepth = 0;
-        return maxDepth(root, ++curDepth, ++curDepth);
+        int leftDepth = maxDepth(node.left);
+        int rightDepth = maxDepth(node.right);
+        return 1 + Math.max(leftDepth, rightDepth);
     }
 
-    private int maxDepth(Node<K, V> curNode, int curDepth, int curMax) {
-        if (curNode == null) {
-            curDepth--;
+    // public String toString() {
 
-            if (curDepth > curMax) {
-                curMax = curDepth;
-            }
-
-            return curMax;
-        }
-
-        int leftMax = maxDepth(curNode.left, ++curDepth, curMax);
-        curDepth--;
-        int rightMax = maxDepth(curNode.right, ++curDepth, curMax);
-
-        return Math.max(leftMax, rightMax);
-    }
-
-    public String toString() {
-
-    }
+    // }
 
     public static void main(String[] args) {
         BSTMap<Integer, String> myTree = new BSTMap<>();
 
-        myTree.put(4, "Michael");
-        myTree.put(2, "Tracy");
-        myTree.put(3, "Vanessa");
-        myTree.put(1, "Vanessa");
-        myTree.put(6, "Vanessa");
-        myTree.put(5, "Vanessa");
+        myTree.put(10, "Michael");
+        myTree.put(20, "Michael");
+        myTree.put(1, "Michael");
+        myTree.put(15, "Michael");
 
-        System.out.println(myTree.maxDepth());
+        System.out.println(myTree);
     }
 }
